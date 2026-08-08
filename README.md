@@ -9,6 +9,54 @@ back whenever. No account, no sync, and the extension makes no network requests.
 [![Tech](https://img.shields.io/badge/Tech-TypeScript-2f6f5e.svg)](#how-it-works)
 
 <!-- media:start -->
+
+<p align="center">
+  <img src="docs/media/logo.png" width="96" alt="Stowlane logo">
+</p>
+
+<h3 align="center">Close forty tabs without losing them.</h3>
+
+<p align="center">
+  <a href="docs/media/demo.mp4">
+    <img src="docs/media/demo-thumbnail.webp" width="640" alt="Watch the Stowlane demo">
+  </a>
+  <br>
+  <a href="docs/media/demo.mp4"><b>Watch the 30 second demo</b></a>
+</p>
+
+## Screenshots
+
+![Your tabs, put away by name.](docs/media/1-lanes.webp)
+
+<sub>Your tabs, put away by name.</sub>
+
+<details>
+<summary><b>See 3 more</b></summary>
+
+### Open
+
+![Open one, or bring them all back.](docs/media/2-open.webp)
+
+<sub>Open one, or bring them all back.</sub>
+
+### Search
+
+![Find the tab, not just the lane.](docs/media/3-search.webp)
+
+<sub>Find the tab, not just the lane.</sub>
+
+### Settings
+
+![It leaves only when you export it.](docs/media/4-settings.webp)
+
+<sub>It leaves only when you export it.</sub>
+
+</details>
+
+<sub>Every screenshot is captured from the real extension running in Chrome, not
+mocked up, so they cannot drift from what the product actually does. Regenerate
+them with the tooling in the store-publishing workspace.</sub>
+
 <!-- media:end -->
 
 ## What it does
