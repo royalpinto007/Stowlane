@@ -101,6 +101,11 @@ async function restore(urls: string[], pinned: boolean[]): Promise<{ ok: boolean
   // does not briefly show an empty window.
   const [first, ...rest] = urls;
   const win = await chrome.windows.create({ url: first, focused: true });
+  // Chrome returns nothing if the window could not be created, in which case
+  // there is nowhere to put the remaining tabs. Better to report failure than
+  // to scatter them into whatever window happens to be focused.
+  if (!win) return { ok: false };
+
   if (pinned[0] && win.tabs?.[0]?.id !== undefined) {
     await chrome.tabs.update(win.tabs[0].id, { pinned: true });
   }
