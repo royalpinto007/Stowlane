@@ -10,55 +10,148 @@
     <div id="app">
       <header class="bar">
         <div class="brand">
-          <img src="icons/icon-32.png" alt="" width="22" height="22" />
-          <span>Stowlane</span>
+          <span class="brand-icon"
+            ><img src="icons/icon-32.png" alt="" width="22" height="22"
+          /></span>
+          <span class="brand-name">Stowlane</span>
           <span class="count" id="count" aria-live="polite"></span>
         </div>
-        <button id="settings-btn" class="icon-btn" aria-label="Settings" title="Settings">⚙</button>
+        <div class="bar-actions">
+          <button
+            id="expand-all"
+            class="icon-btn text"
+            type="button"
+            title="Expand or collapse all lanes"
+          >
+            Expand
+          </button>
+          <button id="settings-btn" class="icon-btn" aria-label="Settings" title="Settings">
+            <svg width="17" height="17" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path
+                d="M8 1.5v1.7M8 12.8v1.7M1.5 8h1.7M12.8 8h1.7M3.4 3.4l1.2 1.2M11.4 11.4l1.2 1.2M12.6 3.4l-1.2 1.2M4.6 11.4l-1.2 1.2"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </div>
       </header>
 
       <div class="toolbar">
-        <button id="stow-btn" class="primary">Stow this window</button>
+        <button id="stow-btn" class="primary" type="button">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M3 5.5h10v7H3zM5.5 5.5v-1a2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5v1M6.5 8.7h3"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span class="primary-label">Stow this window</span>
+        </button>
         <label class="toggle keep">
           <input type="checkbox" id="keep-open" />
+          <span class="switch" aria-hidden="true"></span>
           <span>Keep tabs open</span>
         </label>
         <div class="filters">
-          <input
-            id="search"
-            type="search"
-            placeholder="Search lanes and tabs"
-            aria-label="Search lanes and tabs"
-            autocomplete="off"
-          />
-          <select id="sort" aria-label="Sort order">
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="largest">Most tabs</option>
-            <option value="name">Name</option>
-          </select>
-          <label class="toggle">
-            <input type="checkbox" id="starred-only" />
-            <span>Starred</span>
-          </label>
+          <div class="search-wrap">
+            <svg
+              class="search-icon"
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6" />
+              <path
+                d="m10.7 10.7 3 3"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+              />
+            </svg>
+            <input
+              id="search"
+              type="search"
+              placeholder="Search lanes and tabs  ( / )"
+              aria-label="Search lanes and tabs"
+              autocomplete="off"
+            />
+            <button id="search-clear" class="search-clear" aria-label="Clear search" hidden>
+              ×
+            </button>
+          </div>
+          <div class="filters-row">
+            <div class="select-wrap">
+              <select id="sort" aria-label="Sort order">
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="largest">Most tabs</option>
+                <option value="name">Name</option>
+              </select>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                <path
+                  d="m2.5 4 2.5 2.5L7.5 4"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <label class="pill-toggle">
+              <input type="checkbox" id="starred-only" />
+              <span class="pill"><span aria-hidden="true">★</span>Starred</span>
+            </label>
+          </div>
         </div>
+        <p class="results-meta" id="results-meta" aria-live="polite"></p>
       </div>
 
       <main id="list" class="list" aria-live="polite"></main>
 
-      <section id="settings" class="settings" hidden>
+      <section id="settings" class="settings" hidden aria-label="Settings">
         <div class="panel-bar">
-          <button id="settings-back" class="icon-btn" aria-label="Back">←</button>
-          <strong>Settings</strong>
+          <button id="settings-back" class="icon-btn back" aria-label="Back">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M10 3 5 8l5 5"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span>Lanes</span>
+          </button>
+          <strong class="panel-title">Settings</strong>
+          <span class="panel-spacer" aria-hidden="true"></span>
         </div>
         <div class="settings-body">
-          <p class="muted" id="storage-line"></p>
+          <div class="storage-card">
+            <div class="storage-top">
+              <strong>Tab storage</strong>
+              <span id="storage-line" class="muted"></span>
+            </div>
+            <div class="meter" aria-hidden="true"><span id="storage-meter"></span></div>
+          </div>
           <div class="settings-row">
             <button id="export-btn" class="ghost">Export backup</button>
             <button id="import-btn" class="ghost">Import backup</button>
             <input type="file" id="import-file" accept="application/json" hidden />
           </div>
-          <button id="clear-btn" class="ghost danger">Delete every lane</button>
+          <div class="danger-zone">
+            <button id="clear-btn" class="ghost danger">Delete every lane</button>
+          </div>
           <p class="muted small">
             Stowlane makes no network requests. Your lanes stay in this browser profile and are
             never uploaded, so a backup file is the only way to move them.
@@ -66,7 +159,9 @@
         </div>
       </section>
 
-      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      <div id="toast" class="toast" role="status" aria-live="polite">
+        <span class="toast-dot" aria-hidden="true"></span><span id="toast-text"></span>
+      </div>
     </div>
     <script type="module" src="dist/sidepanel.js"></script>
   </body>

@@ -15,19 +15,24 @@ const els = {
   count: $('count'),
   list: $('list'),
   stow: $<HTMLButtonElement>('stow-btn'),
+  expandAll: $<HTMLButtonElement>('expand-all'),
   keepOpen: $<HTMLInputElement>('keep-open'),
   search: $<HTMLInputElement>('search'),
+  searchClear: $<HTMLButtonElement>('search-clear'),
+  resultsMeta: $('results-meta'),
   sort: $<HTMLSelectElement>('sort'),
   starredOnly: $<HTMLInputElement>('starred-only'),
   settings: $('settings'),
   settingsBtn: $('settings-btn'),
   settingsBack: $('settings-back'),
   storageLine: $('storage-line'),
+  storageMeter: $('storage-meter'),
   exportBtn: $('export-btn'),
   importBtn: $('import-btn'),
   importFile: $<HTMLInputElement>('import-file'),
   clearBtn: $('clear-btn'),
   toast: $('toast'),
+  toastText: $('toast-text'),
 };
 
 let lanes: Lane[] = [];
@@ -50,7 +55,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
 
 let toastTimer: number | undefined;
 function toast(message: string): void {
-  els.toast.textContent = message;
+  els.toastText.textContent = message;
   els.toast.classList.add('show');
   window.clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => els.toast.classList.remove('show'), 2600);
@@ -64,14 +69,31 @@ async function refresh(): Promise<void> {
 function render(): void {
   const rows = applyFilters(lanes, filters);
   const terms = parseQuery(filters.query);
+  const tabs = totalTabs(lanes);
 
-  els.count.textContent = lanes.length ? `${compactCount(totalTabs(lanes))} tabs` : '';
+  els.count.textContent = lanes.length ? `${compactCount(tabs)} tabs` : '';
+  els.searchClear.hidden = !filters.query;
+
+  if (!lanes.length) {
+    els.resultsMeta.textContent = '';
+  } else if (filters.query || filters.starredOnly) {
+    els.resultsMeta.textContent = `${rows.length} of ${lanes.length} lanes · ${tabs} tabs stowed`;
+  } else {
+    els.resultsMeta.textContent = `${lanes.length} lane${lanes.length === 1 ? '' : 's'} · ${tabs} tabs stowed`;
+  }
+
+  const allOpen = rows.length > 0 && rows.every((l) => expanded.has(l.id));
+  els.expandAll.textContent = allOpen ? 'Collapse' : 'Expand';
+
   els.list.replaceChildren();
 
   if (!rows.length) {
     const empty = el('div', 'empty');
+    const art = el('div', 'empty-art', lanes.length ? '🔍' : '🧳');
+    art.setAttribute('aria-hidden', 'true');
     empty.append(
-      el('strong', undefined, lanes.length ? 'Nothing matches' : 'No lanes yet'),
+      art,
+      el('strong', undefined, lanes.length ? 'Nothing matches' : 'A calmer tab bar awaits'),
       el(
         'span',
         undefined,
@@ -100,30 +122,44 @@ function render(): void {
   }
 }
 
+function avatarLetter(name: string): string {
+  const clean = name.trim().replace(/^["“”']+/, '');
+  return (clean.charAt(0) || 'L').toUpperCase();
+}
+
 function laneCard(lane: Lane, terms: readonly string[]): HTMLElement {
-  const card = el('div', 'lane');
+  const isOpen = expanded.has(lane.id);
+  const card = el('div', `lane${isOpen ? ' open' : ''}`);
 
   const head = el('button', 'lane-head');
-  head.setAttribute('aria-expanded', String(expanded.has(lane.id)));
+  head.setAttribute('aria-expanded', String(isOpen));
+  head.setAttribute(
+    'aria-label',
+    `${lane.name}, ${tabLabel(lane.tabs.length)}${lane.starred ? ', starred' : ''}`
+  );
 
-  const star = el('span', `star${lane.starred ? ' on' : ''}`, lane.starred ? '★' : '☆');
-  star.setAttribute('role', 'button');
-  star.setAttribute('tabindex', '0');
+  const avatar = el('span', 'lane-avatar', avatarLetter(lane.name));
+  avatar.setAttribute('aria-hidden', 'true');
+
+  const titles = el('span', 'lane-titles');
+  titles.append(el('span', 'lane-title', lane.name), el('span', 'lane-sub', subtitle(lane)));
+
+  const count = el('span', 'lane-count', String(lane.tabs.length));
+  count.title = tabLabel(lane.tabs.length);
+
+  const star = el('button', `star${lane.starred ? ' on' : ''}`, lane.starred ? '★' : '☆');
+  star.type = 'button';
   star.setAttribute('aria-label', lane.starred ? 'Unstar this lane' : 'Star this lane');
-  const toggleStar = (e: Event) => {
+  star.setAttribute('aria-pressed', String(lane.starred));
+  star.addEventListener('click', (e) => {
     e.stopPropagation();
     void updateLane(lane.id, (l) => ({ ...l, starred: !l.starred })).then(refresh);
-  };
-  star.addEventListener('click', toggleStar);
-  star.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') toggleStar(e);
   });
 
-  head.append(
-    star,
-    el('span', 'lane-title', lane.name),
-    el('span', 'lane-sub', tabLabel(lane.tabs.length))
-  );
+  const chev = el('span', 'chev', '▾');
+  chev.setAttribute('aria-hidden', 'true');
+
+  head.append(avatar, titles, count, star, chev);
   head.addEventListener('click', () => {
     if (expanded.has(lane.id)) expanded.delete(lane.id);
     else expanded.add(lane.id);
@@ -131,8 +167,17 @@ function laneCard(lane: Lane, terms: readonly string[]): HTMLElement {
   });
   card.append(head);
 
-  if (expanded.has(lane.id)) card.append(laneBody(lane, terms));
+  if (isOpen) card.append(laneBody(lane, terms));
   return card;
+}
+
+function subtitle(lane: Lane): string {
+  const date = new Date(lane.stowedAt).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+  const sites = [...new Set(lane.tabs.map((t) => t.site).filter(Boolean))].slice(0, 2).join(' · ');
+  return [date, sites].filter(Boolean).join(' · ');
 }
 
 function laneBody(lane: Lane, terms: readonly string[]): HTMLElement {
@@ -141,11 +186,16 @@ function laneBody(lane: Lane, terms: readonly string[]): HTMLElement {
   for (const tab of matchingTabs(lane, terms)) {
     const row = el('div', 'tab-row');
 
-    const link = el('a', 'tab-title', tab.title);
+    const fav = el('span', 'tab-fav', (tab.site || tab.title || '?').charAt(0).toUpperCase());
+    fav.setAttribute('aria-hidden', 'true');
+
+    const main = el('span', 'tab-main');
+    const link = el('a', 'tab-title', tab.title) as HTMLAnchorElement;
     link.href = tab.url;
     link.target = '_blank';
     link.rel = 'noopener';
-    link.title = tab.url;
+    link.title = `${tab.title} — ${tab.url}`;
+    main.append(link, el('span', 'tab-site', tab.site));
 
     const drop = el('button', 'tab-drop', '×');
     drop.setAttribute('aria-label', `Remove ${tab.title} from this lane`);
@@ -153,13 +203,17 @@ function laneBody(lane: Lane, terms: readonly string[]): HTMLElement {
       void updateLane(lane.id, (l) => withoutTab(l, tab.url)).then(refresh);
     });
 
-    row.append(link, el('span', 'tab-site', tab.site), drop);
+    row.append(fav, main, drop);
     body.append(row);
   }
 
   const actions = el('div', 'lane-actions');
 
-  const restore = el('button', 'ghost', 'Restore all');
+  const restore = el(
+    'button',
+    'ghost primary-mini',
+    lane.tabs.length > 3 ? `Restore all ${lane.tabs.length}` : 'Restore all'
+  );
   restore.addEventListener('click', () => void restoreLane(lane));
 
   const rename = el('button', 'ghost', 'Rename');
@@ -169,7 +223,7 @@ function laneBody(lane: Lane, terms: readonly string[]): HTMLElement {
     void updateLane(lane.id, (l) => ({ ...l, name: name.trim() || l.name })).then(refresh);
   });
 
-  const remove = el('button', 'ghost danger', 'Delete lane');
+  const remove = el('button', 'ghost danger', 'Delete');
   remove.addEventListener('click', () => {
     if (!confirm(`Delete "${lane.name}" and its ${lane.tabs.length} tabs?`)) return;
     expanded.delete(lane.id);
@@ -192,9 +246,15 @@ async function restoreLane(lane: Lane): Promise<void> {
   else toast('Could not restore that lane.');
 }
 
+function setStowBusy(busy: boolean): void {
+  els.stow.disabled = busy;
+  els.stow.classList.toggle('is-busy', busy);
+  const label = els.stow.querySelector('.primary-label');
+  if (label) label.textContent = busy ? 'Stowing' : 'Stow this window';
+}
+
 async function stow(): Promise<void> {
-  els.stow.disabled = true;
-  els.stow.textContent = 'Stowing…';
+  setStowBusy(true);
   try {
     const result = await chrome.runtime.sendMessage({
       type: 'STOW_WINDOW',
@@ -209,8 +269,7 @@ async function stow(): Promise<void> {
   } catch {
     toast('Could not reach the extension. Try reloading it.');
   } finally {
-    els.stow.disabled = false;
-    els.stow.textContent = 'Stow this window';
+    setStowBusy(false);
   }
 }
 
@@ -226,6 +285,14 @@ function download(name: string, text: string): void {
 function wire(): void {
   els.stow.addEventListener('click', () => void stow());
 
+  els.expandAll.addEventListener('click', () => {
+    const rows = applyFilters(lanes, filters);
+    const allOpen = rows.length > 0 && rows.every((l) => expanded.has(l.id));
+    if (allOpen) expanded.clear();
+    else for (const lane of rows) expanded.add(lane.id);
+    render();
+  });
+
   els.search.addEventListener('input', () => {
     filters.query = els.search.value;
     // A search is only useful if the matching tabs are visible, so expand
@@ -234,6 +301,12 @@ function wire(): void {
       for (const lane of applyFilters(lanes, filters)) expanded.add(lane.id);
     }
     render();
+  });
+  els.searchClear.addEventListener('click', () => {
+    els.search.value = '';
+    filters.query = '';
+    render();
+    els.search.focus();
   });
   els.sort.addEventListener('change', () => {
     filters.sort = els.sort.value as Filters['sort'];
@@ -247,7 +320,8 @@ function wire(): void {
   els.settingsBtn.addEventListener('click', () => {
     els.settings.hidden = false;
     void usageBytes().then((bytes) => {
-      els.storageLine.textContent = `${lanes.length} lane${lanes.length === 1 ? '' : 's'} holding ${tabLabel(totalTabs(lanes))}, using about ${formatBytes(bytes)}.`;
+      els.storageLine.textContent = `${lanes.length} lane${lanes.length === 1 ? '' : 's'} · ${tabLabel(totalTabs(lanes))} · about ${formatBytes(bytes)}`;
+      els.storageMeter.style.width = `${Math.min(100, (bytes / (5 * 1024 * 1024)) * 100)}%`;
     });
   });
   els.settingsBack.addEventListener('click', () => {
@@ -290,7 +364,15 @@ function wire(): void {
   });
 
   document.addEventListener('keydown', (event) => {
+    const target = event.target as HTMLElement | null;
+    const typing =
+      target &&
+      (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT');
     if (event.key === 'Escape' && !els.settings.hidden) els.settings.hidden = true;
+    else if (event.key === '/' && !typing) {
+      event.preventDefault();
+      els.search.focus();
+    }
   });
 }
 
