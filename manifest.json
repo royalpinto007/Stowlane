@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Stowlane: Save and Restore Tabs",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Close forty tabs without losing them. Stow a window into a named lane and bring it back later. No account, no network.",
   "permissions": ["tabs", "storage", "sidePanel"],
   "icons": {

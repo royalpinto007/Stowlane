@@ -71,6 +71,8 @@ tabs are still there when you want them.
   expand so you can see which tab it found.
 - **Star the ones you keep.** Starred lanes stay at the top whatever the sort.
 - **Restore all, or open one tab.** Pinned tabs come back pinned.
+- **Expand all and counts.** One click opens every lane, with tab counts and a
+  totals line. Press `/` to jump to search.
 - **Backup.** Export to JSON, import it on another machine.
 
 ## Why it exists

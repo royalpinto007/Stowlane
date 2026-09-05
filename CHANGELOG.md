@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-06
+
+### Added
+
+- Redesigned side panel: blurred sticky header with a tab count pill, gradient
+  stow button with a busy spinner, and icon search with a clear button.
+- Expand and collapse all lanes, lane avatars with tab count pills, and a
+  results line summarising lanes and stowed tabs.
+- Switch-style keep-open toggle, starred pill filter, and a `/` keyboard
+  shortcut that focuses search.
+- Favicon letters on tab rows with hover-reveal remove buttons, and a storage
+  meter in settings.
+
 ## [1.0.0]
 
 Initial release.
